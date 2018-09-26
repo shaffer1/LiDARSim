@@ -116,9 +116,17 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="BVH.cpp" />
+    <ClCompile Include="MortonConverter.cpp" />
+    <ClCompile Include="Object.cpp" />
+    <ClCompile Include="Point.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BVH.h" />
+    <ClInclude Include="BVH_Utils.h" />
+    <ClInclude Include="MortonConverter.h" />
+    <ClInclude Include="Object.h" />
+    <ClInclude Include="Point.h" />
+    <ClInclude Include="Triangle.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

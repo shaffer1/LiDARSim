@@ -1,22 +1,24 @@
 #include "BVH.h"
+#include "Object.h"
 
 using namespace std;
 
-int BVH::findNumPoints(string filePath) {
+int BVH::findNumPoints(string filePath) const {
 	ifstream stream(filePath);
 	return count(istreambuf_iterator<char>(stream), istreambuf_iterator<char>(), 'v');
 }
 
-int BVH::findNumTriangles(string filePath) {
+int BVH::findNumTriangles(string filePath) const {
 	ifstream stream(filePath);
 	return count(istreambuf_iterator<char>(stream), istreambuf_iterator<char>(), 'f');
 }
 
 void BVH::insertBB(string filePath) {
+	
 
 }
 
-BoundingBox BVH::assignBB(Triangle triangle) {
+BoundingBox BVH::assignBB(const Triangle triangle) {
 	//Find center
 	float xCenter = (max(triangle.p1.x, max(triangle.p2.x, triangle.p3.x)) + min(triangle.p1.x, min(triangle.p2.x, triangle.p3.x))) / 2;
 	float yCenter = (max(triangle.p1.y, max(triangle.p2.y, triangle.p3.y)) + min(triangle.p1.y, min(triangle.p2.y, triangle.p3.y))) / 2;
@@ -30,7 +32,7 @@ BoundingBox BVH::assignBB(Triangle triangle) {
 	return BoundingBox(Point(xCenter, yCenter, zCenter), xRadius, yRadius, zRadius, triangle.idx, true);
 }
 
-bool BVH::BBIntersection(BoundingBox BBa, BoundingBox BBb)
+bool BVH::BBIntersection(const BoundingBox BBa, const BoundingBox BBb) const
 {
 	if ((abs(BBa.center.x - BBb.center.x) > (BBa.rx + BBb.rx)) ||
 		(abs(BBa.center.y - BBb.center.y) > (BBa.ry + BBb.ry)) ||
@@ -42,9 +44,7 @@ int main(int argc, char *argv[]) {
 	string filePath(argv[1]);
 
 	BVH* bvh = new BVH();
-	cout <<"Number of Points: "<< bvh->findNumPoints(filePath) << endl;
-	cout <<"Number of Triangles: "<< bvh->findNumTriangles(filePath) << endl;
-	bvh->insertBB(filePath);
+	Object o(filePath);
 
 	return 0;
 }
