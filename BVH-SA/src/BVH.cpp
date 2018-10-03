@@ -21,17 +21,23 @@ void BVH::insertBB(string filePath) {
 	//for (unsigned int i = 0; i < o.num_triangles; i++) {
 	//	b[i] = assignBB(o.triangles[i]);
 	//}
-
 	nodes = new BVHNode[2 * o.numTriangles - 1];
+	numTriangles = o.numTriangles;
 	triangles = o.triangles;
-	//setting the root
-	size_t leftIndex = 0; 
-	size_t rightIndex = o.numTriangles; 
 	nodes[0].boundingBox = o.bbox;
 	nodes[0].taken = true;
 	nodes[0].index = 0;
 	this->numNodes = 1;
-	buildRecursive(0, o.numTriangles, nodes, 0);
+	
+}
+
+void BVH::build() {
+	//set starting indices
+	size_t leftIndex = 0;
+	size_t rightIndex = numTriangles;
+
+	//start the recursive build on the first node
+	buildRecursive(0, numTriangles, nodes, 0);
 }
 
 void BVH::buildRecursive(size_t leftIndex, size_t rightIndex,  BVHNode* current, int depth) {
@@ -62,7 +68,7 @@ void BVH::buildRecursive(size_t leftIndex, size_t rightIndex,  BVHNode* current,
 	BVHNode* right = nodes + numNodes + 1;
 	left->taken = true;
 
-	// TODO More efficient bounding box calculation
+	// TODO More efficient bounding box calculation possible?
 	left->boundingBox = calculateBBox(leftIndex, splitIndex);
 	left->index = numNodes;
 	current->leftIndex = numNodes;
@@ -143,6 +149,7 @@ int main(int argc, char *argv[]) {
 
 	BVH* bvh = new BVH();
 	bvh->insertBB(filePath);
+	bvh->build();
 
 	return 0;
 }

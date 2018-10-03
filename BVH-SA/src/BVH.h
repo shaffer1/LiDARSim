@@ -22,6 +22,8 @@ public:
 	BVHNode* nodes;			//array containing all bvh nodes
 	Triangle* triangles;	//array containing pointers to triangles
 	size_t numNodes;
+	size_t numTriangles;
+	size_t maxCapacity;
 	BVH() {};
 	BVH(int maxLevels, int maxItemsPerBin);
 
@@ -34,7 +36,7 @@ public:
 	bool BBIntersection(BoundingBox BBa, BoundingBox BBb) const;
 
 	//void insert(const BoundingBox& b, const T& item);
-	//void build();
+	void build();
 	//const T* getBinContents(int binIdx); 
 	//// find bin that contains the point
 	//int findBin(const double* pt) const;
