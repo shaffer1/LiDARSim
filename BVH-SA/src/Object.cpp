@@ -1,4 +1,5 @@
 #include "Object.h"
+#include <iostream>
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
 Object::Object(std::string filePath)
@@ -23,9 +24,22 @@ Object::Object(std::string filePath)
 	tinyobj::real_t maxy = std::numeric_limits<tinyobj::real_t>::lowest();
 	tinyobj::real_t maxz = std::numeric_limits<tinyobj::real_t>::lowest();
 
+	//count number of triangles in .obj
+
+	for (size_t s = 0; s < shapes.size(); s++) {
+		numTriangles += shapes[s].mesh.num_face_vertices.size();
+	}
+	triangles = new Triangle[numTriangles];
+
+	//indexing starts at one
+	int triangles_array_index = 1;
 	for (size_t s = 0; s < shapes.size(); s++) {
 		// Loop over faces(polygon)
 		size_t index_offset = 0;
+
+		//allocate some memory to temporarily store point values for each triangle
+		Point p[3];
+
 		for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) {
 			int fv = shapes[s].mesh.num_face_vertices[f];
 			if (fv != 3) {
@@ -35,10 +49,15 @@ Object::Object(std::string filePath)
 			// Loop over vertices in the face.
 			for (size_t v = 0; v < fv; v++) {
 				// access to vertex
-				tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
-				tinyobj::real_t vx = attrib.vertices[3 * idx.vertex_index + 0];
-				tinyobj::real_t vy = attrib.vertices[3 * idx.vertex_index + 1];
-				tinyobj::real_t vz = attrib.vertices[3 * idx.vertex_index + 2];
+				int idx = shapes[s].mesh.indices[index_offset + v].vertex_index;
+				tinyobj::real_t vx = attrib.vertices[3 * idx + 0];
+				tinyobj::real_t vy = attrib.vertices[3 * idx + 1];
+				tinyobj::real_t vz = attrib.vertices[3 * idx + 2];
+
+				p[v].idx = idx;
+				p[v].x = vx;
+				p[v].y = vy;
+				p[v].z = vz;
 
 				if (minx > vx) {
 					minx = vx;
@@ -60,12 +79,22 @@ Object::Object(std::string filePath)
 				}
 			}
 			index_offset += fv;
+			triangles[triangles_array_index - 1] = Triangle(p[0], p[1], p[2], triangles_array_index);
 
-
-			//TODO: ADD TRIANGLES TO TRIANGLE ARRAY
-			shapes[s].mesh.material_ids[f];
+			triangles_array_index++;
 		}
 	}
+	Point center = Point((maxx + minx) / 2.0f, (maxy + miny) / 2.0f, (maxz + minz) / 2.0f);
+	float rx = (maxx - minx) / 2.0f;
+	float ry = (maxy - miny) / 2.0f;
+	float rz = (maxz - minz) / 2.0f;
+	this->bbox = BoundingBox(center, rx, ry, rz, -1, false);
+
+	numTriangles = triangles_array_index - 1;
+	//for (int i = 0; i < num_triangles; i++) {
+	//	Triangle t = triangles[i];
+	//	std::cout << t.idx << ": " << "(" << t.p1.idx << ", " << t.p2.idx << ", " << t.p3.idx << ")\n";
+	//}
 	this->mortonConverter = MortonConverter(minx, miny, minz, maxx, maxy, maxz);
 }
 

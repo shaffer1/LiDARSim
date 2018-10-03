@@ -3,8 +3,9 @@
 
 
 //morton magic courtesy of https://devblogs.nvidia.com/thinking-parallel-part-iii-tree-construction-gpu/
-unsigned int MortonConverter::getMortonCode(Point p)
+unsigned int MortonConverter::getMortonCode(const Point p) const
 {
+	//10 bits per value, for 30 bit morton code that fits inside an unsigned int
 	unsigned int x = (unsigned int)(((p.x - minx) / (maxx - minx)) * (1024.0f));
 	unsigned int y = (unsigned int)(((p.y - miny) / (maxy - miny)) * (1024.0f));
 	unsigned int z = (unsigned int)(((p.z - minz) / (maxz - minz)) * (1024.0f));
@@ -16,7 +17,7 @@ unsigned int MortonConverter::getMortonCode(Point p)
 	return xx * 4 + yy * 2 + zz;
 }
 
-Point MortonConverter::getPoint(int mortonCode)
+Point MortonConverter::getPoint(int mortonCode) const
 {
 	return Point();
 }
@@ -34,7 +35,7 @@ MortonConverter::~MortonConverter()
 }
 
 
-unsigned int MortonConverter::expandBits(unsigned int v)
+unsigned int MortonConverter::expandBits(unsigned int v) const
 {
 	v = (v * 0x00010001u) & 0xFF0000FFu;
 	v = (v * 0x00000101u) & 0x0F00F00Fu;
