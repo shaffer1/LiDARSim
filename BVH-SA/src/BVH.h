@@ -20,7 +20,7 @@ class BVH {
 public:
 	MortonConverter mortonConverter;
 	BVHNode* nodes;			//array containing all bvh nodes
-	Triangle* triangles;	//array containing pointers to triangles
+	Triangle** triangles;	//array containing pointers to triangles
 	size_t numNodes;
 	size_t numTriangles;
 	size_t maxCapacity;
@@ -34,7 +34,7 @@ public:
 	BoundingBox calculateBBox(size_t leftIndex, size_t rightIndex);
 	BoundingBox assignBB(const Triangle & triangle);
 	bool BBIntersection(BoundingBox BBa, BoundingBox BBb) const;
-
+	int printTree(BVHNode* current, int depth);
 	//void insert(const BoundingBox& b, const T& item);
 	void build();
 	//const T* getBinContents(int binIdx); 

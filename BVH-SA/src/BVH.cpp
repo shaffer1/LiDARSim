@@ -16,54 +16,60 @@ int BVH::findNumTriangles(string filePath) const {
 
 void BVH::insertBB(string filePath) {
 	Object o = Object(filePath);
-	//BoundingBox* b = new BoundingBox[o.num_triangles];
-	//BoundingBox worldBoundingBox = o.bbox;
-	//for (unsigned int i = 0; i < o.num_triangles; i++) {
-	//	b[i] = assignBB(o.triangles[i]);
-	//}
+
+	//2*n - 1 maximum nodes
 	nodes = new BVHNode[2 * o.numTriangles - 1];
 	numTriangles = o.numTriangles;
-	triangles = o.triangles;
+	triangles = new Triangle*[o.numTriangles];
+	for (size_t i = 0; i < o.numTriangles; i++) {
+		triangles[i] = &o.triangles[i];
+	}
+
+	//set the root node
 	nodes[0].boundingBox = o.bbox;
 	nodes[0].taken = true;
 	nodes[0].index = 0;
+	nodes[0].isLeaf = false;
 	this->numNodes = 1;
-	
 }
 
 void BVH::build() {
-	//set starting indices
 	size_t leftIndex = 0;
 	size_t rightIndex = numTriangles;
 
-	//start the recursive build on the first node
+	//Probably should turn this into stack-based iterative for performance
 	buildRecursive(0, numTriangles, nodes, 0);
 }
 
 void BVH::buildRecursive(size_t leftIndex, size_t rightIndex,  BVHNode* current, int depth) {
-	if ((rightIndex - leftIndex) <= 5) {
+	current->isLeaf = false;
+
+	//
+	if ((rightIndex - leftIndex) <= 10) {
 		current->isLeaf = true;
 		current->numTriangles = rightIndex - leftIndex;
 		current->triangleIndex = leftIndex;
 		return;
 	}
 
+	//sort triangle subsection by largest dimension
 	int largestDimension = current->boundingBox.findLargestDimension();
 	TriangleComparer t = TriangleComparer();
 	t.dimension = largestDimension;
-
-	// TODO to improve speed: Replace with pointer sorting instead of sorting actual triangles (much less overhead from swapping)
 	std::sort(triangles + leftIndex, triangles + rightIndex, t);
 	size_t splitIndex = leftIndex;
 
-	// TODO to improve speed: Replace with BINARY search, not linear, or switch to SAH BVH
-	while (triangles[splitIndex].center.getDim(largestDimension) < current->boundingBox.center.getDim(largestDimension) && splitIndex < rightIndex) {
+	// Find the split index to split the array of triangles. TODO to improve speed: Replace with BINARY search, not linear, or switch to SAH BVH
+	while (triangles[splitIndex]->center.getDim(largestDimension) < current->boundingBox.center.getDim(largestDimension) && splitIndex < rightIndex) {
 		splitIndex++;
 	}
+
+	//if all of triangles are in one side, revert to median split
 	if (splitIndex == rightIndex || splitIndex == leftIndex) {
 		splitIndex = (leftIndex + rightIndex) / 2;
 	}
 	
+	//set up child nodes
 	BVHNode* left = nodes + numNodes;
 	BVHNode* right = nodes + numNodes + 1;
 	left->taken = true;
@@ -82,37 +88,40 @@ void BVH::buildRecursive(size_t leftIndex, size_t rightIndex,  BVHNode* current,
 	buildRecursive(splitIndex, rightIndex, right, depth + 1);
 }
 
+
+//More efficient way to do this?
 BoundingBox BVH::calculateBBox(size_t leftIndex, size_t rightIndex) {
-	float minx = std::numeric_limits<float>::max();
-	float miny = std::numeric_limits<float>::max();
-	float minz = std::numeric_limits<float>::max();
+	float minx = (std::numeric_limits<float>::max)();
+	float miny = (std::numeric_limits<float>::max)();
+	float minz = (std::numeric_limits<float>::max)();
 
 	float maxx = std::numeric_limits<float>::lowest();
 	float maxy = std::numeric_limits<float>::lowest();
 	float maxz = std::numeric_limits<float>::lowest();
 
 	for (size_t i = leftIndex; i < rightIndex; i++) {
-		float vx = min(min(triangles[i].p1.x, triangles[i].p2.x), triangles[i].p3.x);
-		float vy = min(min(triangles[i].p1.y, triangles[i].p2.y), triangles[i].p3.y);
-		float vz = min(min(triangles[i].p1.z, triangles[i].p2.z), triangles[i].p3.z);
-
-		if (minx > vx) {
-			minx = vx;
-		}
-		if (miny > vy) {
-			miny = vy;
-		}
-		if (minz > vz) {
-			minz = vz;
-		}
-		if (maxx < vx) {
-			maxx = vx;
-		}
-		if (maxy < vy) {
-			maxy = vy;
-		}
-		if (maxz < vz) {
-			maxz = vz;
+		for (int j = 0; j < 3; j++) {
+			float vx = triangles[i]->getPoint(j).x;
+			float vy = triangles[i]->getPoint(j).y;
+			float vz = triangles[i]->getPoint(j).z;
+			if (minx > vx) {
+				minx = vx;
+			}
+			if (miny > vy) {
+				miny = vy;
+			}
+			if (minz > vz) {
+				minz = vz;
+			}
+			if (maxx < vx) {
+				maxx = vx;
+			}
+			if (maxy < vy) {
+				maxy = vy;
+			}
+			if (maxz < vz) {
+				maxz = vz;
+			}
 		}
 	}
 	Point center = Point((maxx + minx) / 2.0f, (maxy + miny) / 2.0f, (maxz + minz) / 2.0f);
@@ -144,12 +153,34 @@ bool BVH::BBIntersection(const BoundingBox BBa, const BoundingBox BBb) const
 	return true;
 }
 
+//traverses tree and prints the bounding boxes of each one. 
+int BVH::printTree(BVHNode* current, int depth)
+{
+	BoundingBox bbox = current->boundingBox;
+	for (int i = 0; i < depth; i++) {
+		std::cout << "  ";
+	}
+	if (current->isLeaf) {
+		std::cout << "LEAF ";
+	}
+	std::cout << "Center: " << bbox.center.x << ", " << bbox.center.y << ", " << bbox.center.z << " rx: " << bbox.rx << " ry: " << bbox.ry << " rz: " << bbox.rz << endl;
+	if (current->isLeaf) {
+		return 1;
+	}
+
+	
+	return 1 + printTree(current->leftIndex + nodes, depth + 1) + printTree(current->rightIndex + nodes, depth + 1);
+}
+
 int main(int argc, char *argv[]) {
 	string filePath(argv[1]);
 
 	BVH* bvh = new BVH();
 	bvh->insertBB(filePath);
 	bvh->build();
+	int numNodes = bvh->printTree(bvh->nodes, 0);
+	std::cout << numNodes << endl;
 
+	cin.get();
 	return 0;
 }

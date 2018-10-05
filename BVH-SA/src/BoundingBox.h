@@ -9,13 +9,13 @@ using namespace std;
 	//region R = { (x, y, z) | |c.x-x|<=rx, |c.y-y|<=ry, |c.z-z|<=rz }
 struct BoundingBox {
 	Point center;				//center point of BB
-	unsigned int mortonCode;	//morton code of center point
+	unsigned int mortonCode;	//morton code of center point NOT USED
 	float rx, ry, rz;			//radius or halfwidth extents
 	int triangleIdx;			//idx of triangle BB contains
 	bool isLeaf;				//true if BB is leaf in BVH...false if internal node
 	BoundingBox() {};
 	BoundingBox(Point center_arg, float rx_arg, float ry_arg, float rz_arg, int triangleIdx_arg, bool isLeaf_arg) : center(center_arg), rx(rx_arg), ry(ry_arg), rz(rz_arg), triangleIdx(triangleIdx_arg), isLeaf(isLeaf_arg) {}
-	BoundingBox(Triangle triangle) {
+	BoundingBox(const Triangle & triangle) {
 		//Find center
 		float xCenter = (max(triangle.p1.x, max(triangle.p2.x, triangle.p3.x)) + min(triangle.p1.x, min(triangle.p2.x, triangle.p3.x))) / 2;
 		float yCenter = (max(triangle.p1.y, max(triangle.p2.y, triangle.p3.y)) + min(triangle.p1.y, min(triangle.p2.y, triangle.p3.y))) / 2;
