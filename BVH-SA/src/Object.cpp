@@ -88,7 +88,7 @@ Object::Object(std::string filePath)
 	float rx = (maxx - minx) / 2.0f;
 	float ry = (maxy - miny) / 2.0f;
 	float rz = (maxz - minz) / 2.0f;
-	this->bbox = BoundingBox(center, rx, ry, rz, -1, false);
+	//this->bbox = BoundingBox(center, rx, ry, rz, -1, false);
 
 	numTriangles = triangles_array_index - 1;
 	//for (int i = 0; i < num_triangles; i++) {

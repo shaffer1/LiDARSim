@@ -116,20 +116,30 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="BVH.cpp" />
+    <ClCompile Include="BVHBuildNode.cpp" />
     <ClCompile Include="BVHNode.cpp" />
+    <ClCompile Include="BVHObjectInfo.cpp" />
+    <ClCompile Include="LinearBVHNode.cpp" />
+    <ClCompile Include="MidpointComparer.cpp" />
     <ClCompile Include="MortonConverter.cpp" />
     <ClCompile Include="Object.cpp" />
     <ClCompile Include="Point.cpp" />
+    <ClCompile Include="Ray.cpp" />
     <ClCompile Include="TriangleComparer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BoundingBox.h" />
     <ClInclude Include="BVH.h" />
+    <ClInclude Include="BVHBuildNode.h" />
     <ClInclude Include="BVHNode.h" />
+    <ClInclude Include="BVHObjectInfo.h" />
     <ClInclude Include="BVH_Utils.h" />
+    <ClInclude Include="LinearBVHNode.h" />
+    <ClInclude Include="MidpointComparer.h" />
     <ClInclude Include="MortonConverter.h" />
     <ClInclude Include="Object.h" />
     <ClInclude Include="Point.h" />
+    <ClInclude Include="Ray.h" />
     <ClInclude Include="Triangle.h" />
     <ClInclude Include="TriangleComparer.h" />
   </ItemGroup>

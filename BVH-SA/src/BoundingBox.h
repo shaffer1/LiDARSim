@@ -1,6 +1,6 @@
 #pragma once
 #include "Point.h"
-#include "Triangle.h"
+#include "Ray.h"
 #include <cmath>
 #include <algorithm>
 using namespace std;
@@ -8,35 +8,95 @@ using namespace std;
 	//faces always parallel to axes
 	//region R = { (x, y, z) | |c.x-x|<=rx, |c.y-y|<=ry, |c.z-z|<=rz }
 struct BoundingBox {
-	Point center;				//center point of BB
-	unsigned int mortonCode;	//morton code of center point NOT USED
-	float rx, ry, rz;			//radius or halfwidth extents
-	int triangleIdx;			//idx of triangle BB contains
-	bool isLeaf;				//true if BB is leaf in BVH...false if internal node
-	BoundingBox() {};
-	BoundingBox(Point center_arg, float rx_arg, float ry_arg, float rz_arg, int triangleIdx_arg, bool isLeaf_arg) : center(center_arg), rx(rx_arg), ry(ry_arg), rz(rz_arg), triangleIdx(triangleIdx_arg), isLeaf(isLeaf_arg) {}
-	BoundingBox(const Triangle & triangle) {
-		//Find center
-		float xCenter = (max(triangle.p1.x, max(triangle.p2.x, triangle.p3.x)) + min(triangle.p1.x, min(triangle.p2.x, triangle.p3.x))) / 2;
-		float yCenter = (max(triangle.p1.y, max(triangle.p2.y, triangle.p3.y)) + min(triangle.p1.y, min(triangle.p2.y, triangle.p3.y))) / 2;
-		float zCenter = (max(triangle.p1.z, max(triangle.p2.z, triangle.p3.z)) + min(triangle.p1.z, min(triangle.p2.z, triangle.p3.z))) / 2;
+	Point min;
+	Point max;
+	bool empty;
 
-		//Find radius
-		rx = max((abs(xCenter - triangle.p1.x)), (max(abs(xCenter - triangle.p2.x), abs(xCenter - triangle.p3.x))));
-		ry = max((abs(yCenter - triangle.p1.y)), (max(abs(yCenter - triangle.p2.y), abs(yCenter - triangle.p3.y))));
-		rz = max((abs(zCenter - triangle.p1.z)), (max(abs(zCenter - triangle.p2.z), abs(zCenter - triangle.p3.z))));
-
-		center = Point(xCenter, yCenter, zCenter);
+	BoundingBox() {
+		empty = true;
 	}
-	int findLargestDimension() {
-		if (rx > ry && rx > rz) {
+	BoundingBox(const Point & min, const Point & max) : min(min), max(max) { empty = false; }
+
+	BoundingBox union_boxes(const BoundingBox & b2)
+	{
+		Point new_min = Point::min(this->min, b2.min);
+		Point new_max = Point::max(this->max, b2.max);
+		return BoundingBox(new_min, new_max);
+	}
+
+	BoundingBox union_boxes(const Point & p)
+	{
+		if (empty) {
+			empty = false;
+			return BoundingBox(p, p);
+		}
+		Point new_min = Point::min(this->min, p);
+		Point new_max = Point::max(this->max, p);
+		return BoundingBox(new_min, new_max);
+	}
+
+	int getMaximumDimension() {
+		double xdiameter = max.x - min.x;
+		double ydiameter = max.y - min.y;
+		double zdiameter = max.z - min.z;
+
+		if (xdiameter >= ydiameter && xdiameter >= zdiameter) {
 			return 0;
 		}
-		else if (ry > rx && ry > rz) {
+		if (ydiameter >= xdiameter && ydiameter >= zdiameter) {
 			return 1;
 		}
 		return 2;
 	}
+
+	//inspired from Smit's method http://www.cs.utah.edu/~awilliam/box/box.pdf
+	bool hit(const Ray& r) const {
+		double divx = 1. / r.direction.x;
+		double xnear = (min.x - r.origin.x) * divx;
+		double xfar = (max.x - r.origin.x) * divx;
+
+		if (xfar < xnear) {
+			std::swap(xfar, xnear);
+		}
+
+		double divy = 1. / r.direction.y;
+		double ynear = (min.y - r.origin.y) * divy;
+		double yfar = (max.y - r.origin.y) * divy;
+
+		if (yfar < ynear) {
+			std::swap(yfar, ynear);
+		}
+
+		double divz = 1. / r.direction.z;
+		double znear = (min.z - r.origin.z) * divz;
+		double zfar = (max.z - r.origin.z) * divz;
+
+		if (zfar < znear) {
+			std::swap(zfar, znear);
+		}
+
+		if (ynear > xfar || xnear > yfar) {
+			return false;
+		}
+
+		if (ynear > xnear) {
+			xnear = ynear;
+		}
+		if (yfar < xfar) {
+			xfar = yfar;
+		}
+
+		if (xnear > zfar || znear > xfar) {
+			return false;
+		}
+
+		if (znear > xnear) {
+			xnear = znear;
+		}
+		if (zfar < xfar) {
+			xfar = zfar;
+		}
+
+		return xfar > 0;
+	}
 };
-
-
