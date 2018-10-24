@@ -44,11 +44,17 @@ struct BoundingBox {
 		return planes;
 	}
 
+	bool sphereInsideBox(const Sphere & s) const {
+		Plane* planes = getPlanes();
+		for (int i = 0; i < 6; i++) {
+			if(!s.insidePlane(planes[i])) return false;
+		}
+		return true;
+	}
+
+	//TODO: Add intersect, not inside too
 	bool intersect(const Sphere & s) const {
-		Point minSphere = s.center - s.radius;
-		Point maxSphere = s.center + s.radius;
-		//TODO
-		return false;
+		return sphereInsideBox(s);
 	}
 
 	BoundingBox union_boxes(const BoundingBox & b2)
