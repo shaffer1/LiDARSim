@@ -17,10 +17,46 @@ struct Point {
 		return z;
 	}
 
+	float dot(const Point& b) const{
+		float newx = x * b.x;
+		float newy = y * b.y;
+		float newz = z * b.z;
+		return newx + newy + newz;
+	}
+
+	Point operator-(float f) const {
+		float newx = x - f;
+		float newy = y - f;
+		float newz = z - f;
+		return Point(newx, newy, newz);
+	}
+
+	Point operator+(float f) const {
+		float newx = x + f;
+		float newy = y + f;
+		float newz = z + f;
+		return Point(newx, newy, newz);
+	}
+
+	bool operator>=(const Point & b) const {
+		return x >= b.x && y >= b.y && z >= b.z;
+	}
+
+	bool operator<=(const Point & b) const {
+		return x <= b.x && y <= b.y && z <= b.z;
+	}
+
 	Point operator+(const Point & b) const {
 		float newx = x + b.x;
 		float newy = y + b.y;
 		float newz = z + b.z;
+		return Point(newx, newy, newz);
+	}
+
+	Point operator-(const Point & b) const {
+		float newx = x - b.x;
+		float newy = y - b.y;
+		float newz = z - b.z;
 		return Point(newx, newy, newz);
 	}
 

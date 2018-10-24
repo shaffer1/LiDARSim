@@ -1,6 +1,8 @@
 #pragma once
 #include "Point.h"
 #include "Ray.h"
+#include "Sphere.h"
+#include "Plane.h"
 #include <cmath>
 #include <algorithm>
 using namespace std;
@@ -16,6 +18,38 @@ struct BoundingBox {
 		empty = true;
 	}
 	BoundingBox(const Point & min, const Point & max) : min(min), max(max) { empty = false; }
+
+	bool intersect(const Point & p) const {
+		return min.x <= p.x && min.y <= p.y && min.x <= p.z && max.x >= p.x && max.y >= p.y && max.z >= p.z;
+	}
+
+	Plane* getPlanes() const {
+		Plane* planes = new Plane[6];
+		for (int i = 0; i < 3; i++) {
+			planes[i].point = min;
+		}
+
+		for (int i = 3; i < 6; i++) {
+			planes[i].point = max;
+		}
+
+		planes[0].direction = Point(1., 0., 0.);
+		planes[1].direction = Point(0., 1., 0.);
+		planes[2].direction = Point(0., 0., 1.);
+
+		planes[3].direction = Point(1., 0., 0.);
+		planes[4].direction = Point(0., 1., 0.);
+		planes[5].direction = Point(0., 0., 1.);
+
+		return planes;
+	}
+
+	bool intersect(const Sphere & s) const {
+		Point minSphere = s.center - s.radius;
+		Point maxSphere = s.center + s.radius;
+		//TODO
+		return false;
+	}
 
 	BoundingBox union_boxes(const BoundingBox & b2)
 	{
