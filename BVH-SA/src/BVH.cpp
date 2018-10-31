@@ -7,7 +7,9 @@
 #include "MidpointComparer.h"
 #include <iostream>
 
-
+inline float sqrDist(const Point & p1, const Point & p2) {
+	return (p2.x - p1.x) * (p2.x - p1.x) + (p2.y - p1.y) * (p2.y - p1.y) + (p2.z - p1.z) * (p2.z - p1.z);
+}
 
 
 BVHBuildNode * BVHAccelerator::recursive_build(BVHObjectInfo* build_data, int build_data_size, int start, int end, int * total_nodes, Triangle** ordered_objs, int & orderedObjsSize)
@@ -55,66 +57,67 @@ BVHBuildNode * BVHAccelerator::recursive_build(BVHObjectInfo* build_data, int bu
 	return node;
 }
 
-//bool BVHAccelerator::hit(const Ray & r, double & min_t, HitInfo & hit_info) const
-//{
-//	if (total_nodes == 0) {
-//		return false;
-//	}
-//	bool hit = false;
-//	Direction inverse_direction = 1. / r.direction;
-//	int negative_dir[3] = { inverse_direction.x < 0, inverse_direction.y < 0, inverse_direction.z < 0 };
-//	int todo_offset = 0, node_num = 0;
-//	int todo[64];
-//
-//	double curr_t = MAX_DOUBLE;
-//	double minimum_t = MAX_DOUBLE;
-//	RGBColor curr = RGBColor();
-//	Direction curr_normal = Direction();
-//	//std::cout << "entering loop" << std::endl;
-//	while (true) {
-//		const LinearBVHNode *node = &nodes[node_num];
-//		//std::cout << (int)node->num_objs << std::endl;
-//		if (node->bbox.hit(r, min_t, hit_info)) {
-//			if (node->num_objs > 0) {
-//
-//				//std::cout << "checking children" << std::endl;
-//				for (int i = 0; i < node->num_objs; i++) {
-//					if (objs[node->obj_offset + i]->hit(r, curr_t, hit_info) && curr_t < minimum_t) {
-//						minimum_t = curr_t;
-//						curr = hit_info.color;
-//						curr_normal = hit_info.normal;
-//						hit = true;
-//					}
-//				}
-//				if (todo_offset == 0) break;
-//				node_num = todo[--todo_offset];
-//			}
-//			else {
-//
-//				if (negative_dir[node->axis]) {
-//					//std::cout << "traversing child1" << std::endl;
-//					todo[todo_offset++] = node_num + 1;
-//					node_num = node->child_offset;
-//				}
-//				else {
-//					//std::cout << "traversing child2" << std::endl;
-//					todo[todo_offset++] = node->child_offset;
-//					node_num = node_num + 1;
-//				}
-//			}
-//		}
-//		else {
-//			if (todo_offset == 0) break;
-//			node_num = todo[--todo_offset];
-//		}
-//	}
-//	hit_info.did_hit = hit;
-//	hit_info.hit_point = r.origin + minimum_t * r.direction;
-//	hit_info.color = curr;
-//	hit_info.normal = curr_normal;
-//	min_t = minimum_t;
-//	return hit;
-//}
+bool BVHAccelerator::intersectPoint(const Point & p, Point * approximateClosestPoint) const
+{
+	if (total_nodes == 0) {
+		return false;
+	}
+	bool hit = false;
+	int todo_offset = 0, node_num = 0;
+	int todo[64];
+	
+
+	//std::cout << "entering loop" << std::endl;
+	while (true) {
+		const LinearBVHNode *node = &nodes[node_num];
+		//std::cout << (int)node->num_objs << std::endl;
+		if (node->bbox.containsPoint(p)) {
+			if (node->num_objs > 0) {
+
+				//std::cout << "checking children" << std::endl;
+				hit = true;
+				float min_distance = 100000;
+				for (int i = 0; i < node->num_objs; i++) {
+					float dist = sqrDist(objs[node->obj_offset + i]->p1, p);
+					if (dist < min_distance) {
+						min_distance = dist;
+						*approximateClosestPoint = objs[node->obj_offset + i]->p1;
+					}
+					dist = sqrDist(objs[node->obj_offset + i]->p2, p);
+					if (dist < min_distance) {
+						min_distance = dist;
+						*approximateClosestPoint = objs[node->obj_offset + i]->p2;
+					}
+					dist = sqrDist(objs[node->obj_offset + i]->p3, p);
+					if (dist < min_distance) {
+						min_distance = dist;
+						*approximateClosestPoint = objs[node->obj_offset + i]->p3;
+					}
+				}
+				if (todo_offset == 0) break;
+				node_num = todo[--todo_offset];
+			}
+			else {
+
+				//if (negative_dir[node->axis]) {
+					//std::cout << "traversing child1" << std::endl;
+				todo[todo_offset++] = node_num + 1;
+				node_num = node->child_offset;
+				//}
+				//else {
+					//std::cout << "traversing child2" << std::endl;
+				//	todo[todo_offset++] = node->child_offset;
+				//	node_num = node_num + 1;
+				//}
+			}
+		}
+		else {
+			if (todo_offset == 0) break;
+			node_num = todo[--todo_offset];
+		}
+	}
+	return hit;
+}
 
 int BVHAccelerator::flatten_bvh(BVHBuildNode * node, int * offset)
 {
@@ -350,8 +353,9 @@ int main(int argc, char *argv[]) {
 	}
 
 	BVHAccelerator* bvh = new BVHAccelerator(triangles, o.numTriangles, 1);
-
-	bvh->printTree(bvh->nodes, 0);
+	Point closest = Point(1., 1., 1.);
+	bvh->intersectPoint(Point(0., 0., 0.), &closest);
+	cout << closest.x << ", " << closest.y << ", " << closest.z << endl;
 
 	cin.get();
 	return 0;

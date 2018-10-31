@@ -25,6 +25,7 @@ public:
 	int total_nodes;
 	BVHBuildNode * recursive_build(BVHObjectInfo * build_data, int build_data_size, int start, int end, int * total_nodes, Triangle ** ordered_objs, int & orderedObjsSize);
 	int flatten_bvh(BVHBuildNode* node, int * offset);
+	bool intersectPoint(const Point & p, Point * approximateClosestPoint) const;
 	void printTree(LinearBVHNode* current, int depth) const;
 	LinearBVHNode* nodes;
 	Triangle** objs;

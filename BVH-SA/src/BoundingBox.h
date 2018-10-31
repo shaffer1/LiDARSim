@@ -12,44 +12,114 @@ using namespace std;
 struct BoundingBox {
 	Point min;
 	Point max;
+
+	Plane up;
+	Plane down;
+	Plane left;
+	Plane right;
+	Plane back;
+	Plane front;
+
 	bool empty;
 
 	BoundingBox() {
+		up.point = max;
+		right.point = max;
+		front.point = max;
+
+		down.point = min;
+		left.point = min;
+		back.point = min;
+
+		up.direction = Point(0., 1., 0.);
+		right.direction = Point(1., 0., 0.);
+		front.point = Point(0., 0., 1.);
+
+		down.direction = Point(0., -1., 0.);
+		left.direction = Point(-1., 0., 0.);
+		back.point = Point(0., 0., -1.);
+
 		empty = true;
 	}
-	BoundingBox(const Point & min, const Point & max) : min(min), max(max) { empty = false; }
+	BoundingBox(const Point & min, const Point & max) : min(min), max(max) { 
+		up.point = max;
+		right.point = max;
+		front.point = max;
 
+		down.point = min;
+		left.point = min;
+		back.point = min;
+
+		up.direction = Point(0., 1., 0.);
+		right.direction = Point(1., 0., 0.);
+		front.point = Point(0., 0., 1.);
+
+		down.direction = Point(0., -1., 0.);
+		left.direction = Point(-1., 0., 0.);
+		back.point = Point(0., 0., -1.);
+
+		empty = false; 
+	}
+
+	bool containsPoint(const Point & p) const {
+		return p >= min && p <= max;
+	}
+ 
 	bool intersect(const Point & p) const {
 		return min.x <= p.x && min.y <= p.y && min.x <= p.z && max.x >= p.x && max.y >= p.y && max.z >= p.z;
 	}
 
-	Plane* getPlanes() const {
-		Plane* planes = new Plane[6];
-		for (int i = 0; i < 3; i++) {
-			planes[i].point = min;
-		}
-
-		for (int i = 3; i < 6; i++) {
-			planes[i].point = max;
-		}
-
-		planes[0].direction = Point(1., 0., 0.);
-		planes[1].direction = Point(0., 1., 0.);
-		planes[2].direction = Point(0., 0., 1.);
-
-		planes[3].direction = Point(1., 0., 0.);
-		planes[4].direction = Point(0., 1., 0.);
-		planes[5].direction = Point(0., 0., 1.);
-
-		return planes;
-	}
 
 	bool sphereInsideBox(const Sphere & s) const {
-		Plane* planes = getPlanes();
-		for (int i = 0; i < 6; i++) {
-			if(!s.insidePlane(planes[i])) return false;
-		}
+		if (!s.insidePlane(front)) { return false; }
+		if (!s.insidePlane (back)) { return false; }
+		if (!s.insidePlane(up)) { return false; }
+		if (!s.insidePlane(down)) { return false; }
+		if (!s.insidePlane(left)) { return false; }
+		if (!s.insidePlane(right)) { return false; }
+
 		return true;
+	}
+
+	bool sphereIntersectsBox(const Sphere & s) {
+		bool in_left = s.insidePlane(left);
+		bool in_right = s.insidePlane(right);
+		bool in_front = s.insidePlane(front);
+		bool in_back = s.insidePlane(back);
+		bool in_top = s.insidePlane(up);
+		bool in_bottom = s.insidePlane(down);
+
+		if (s.intersectsPlane(up) &&
+			in_left && in_right && in_front && in_back) {
+			return true;
+		}
+
+		if (s.intersectsPlane(down) &&
+			in_left && in_right && in_front && in_back) {
+			return true;
+		}
+
+		if (s.intersectsPlane(left) &&
+			in_top && in_bottom && in_front && in_back) {
+			return true;
+		}
+
+		if (s.intersectsPlane(right) &&
+			in_top && in_bottom && in_front && in_back) {
+			return true;
+		}
+
+		if (s.intersectsPlane(front) &&
+			in_top && in_bottom && in_left && in_right) {
+			return true;
+		}
+
+		if (s.intersectsPlane(back) &&
+			in_top && in_bottom && in_left && in_right) {
+			return true;
+		}
+
+		return false;
 	}
 
 	//TODO: Add intersect, not inside too
