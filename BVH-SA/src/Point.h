@@ -1,11 +1,10 @@
 #pragma once
 //3D Point Representation
-struct Point {
-	int idx;					//idx of point in given obj file (index begins at 1)
+struct Point {				//idx of point in given obj file (index begins at 1)
 	float x, y, z;
 
 	Point() {};
-	Point(float x_arg, float y_arg, float z_arg, int idx_arg) : x(x_arg), y(y_arg), z(z_arg), idx(idx_arg) {}
+	Point(float x_arg, float y_arg, float z_arg, int idx_arg) : x(x_arg), y(y_arg), z(z_arg) {}
 	Point(float x_arg, float y_arg, float z_arg) : x(x_arg), y(y_arg), z(z_arg) {}
 	float getDim(int dim) const {
 		if (dim == 0) {
@@ -24,11 +23,23 @@ struct Point {
 		return newx + newy + newz;
 	}
 
+	float dist2(const Point& p) const {
+		float xdiff = x - p.x;
+		float ydiff = y - p.y;
+		float zdiff = z - p.z;
+
+		return xdiff * xdiff + ydiff * ydiff + zdiff * zdiff;
+	}
+
 	Point operator-(float f) const {
 		float newx = x - f;
 		float newy = y - f;
 		float newz = z - f;
 		return Point(newx, newy, newz);
+	}
+
+	Point operator/(float f) const {
+		return Point(x / f, y / f, z / f);
 	}
 
 	Point operator+(float f) const {

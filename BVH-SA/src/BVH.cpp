@@ -57,7 +57,7 @@ BVHBuildNode * BVHAccelerator::recursive_build(BVHObjectInfo* build_data, int bu
 	return node;
 }
 
-bool BVHAccelerator::intersectPoint(const Point & p, Point * approximateClosestPoint) const
+float BVHAccelerator::intersectPoint(const Point & p, Point * approximateClosestPoint) const
 {
 	if (total_nodes == 0) {
 		return false;
@@ -71,52 +71,97 @@ bool BVHAccelerator::intersectPoint(const Point & p, Point * approximateClosestP
 	while (true) {
 		const LinearBVHNode *node = &nodes[node_num];
 		//std::cout << (int)node->num_objs << std::endl;
-		if (node->bbox.containsPoint(p)) {
-			if (node->num_objs > 0) {
-
-				//std::cout << "checking children" << std::endl;
-				hit = true;
-				float min_distance = 100000;
-				for (int i = 0; i < node->num_objs; i++) {
-					float dist = sqrDist(objs[node->obj_offset + i]->p1, p);
-					if (dist < min_distance) {
-						min_distance = dist;
-						*approximateClosestPoint = objs[node->obj_offset + i]->p1;
-					}
-					dist = sqrDist(objs[node->obj_offset + i]->p2, p);
-					if (dist < min_distance) {
-						min_distance = dist;
-						*approximateClosestPoint = objs[node->obj_offset + i]->p2;
-					}
-					dist = sqrDist(objs[node->obj_offset + i]->p3, p);
-					if (dist < min_distance) {
-						min_distance = dist;
-						*approximateClosestPoint = objs[node->obj_offset + i]->p3;
-					}
+		if (node->num_objs > 0) {
+			//std::cout << "checking children" << std::endl;
+			hit = true;
+			float min_distance = 100000;
+			for (int i = 0; i < node->num_objs; i++) {
+				float dist = sqrDist(objs[node->obj_offset + i]->p1, p);
+				if (dist < min_distance) {
+					min_distance = dist;
+					*approximateClosestPoint = objs[node->obj_offset + i]->p1;
 				}
-				if (todo_offset == 0) break;
-				node_num = todo[--todo_offset];
+				dist = sqrDist(objs[node->obj_offset + i]->p2, p);
+				if (dist < min_distance) {
+					min_distance = dist;
+					*approximateClosestPoint = objs[node->obj_offset + i]->p2;
+				}
+				dist = sqrDist(objs[node->obj_offset + i]->p3, p);
+				if (dist < min_distance) {
+					min_distance = dist;
+					*approximateClosestPoint = objs[node->obj_offset + i]->p3;
+				}
 			}
-			else {
-
-				//if (negative_dir[node->axis]) {
-					//std::cout << "traversing child1" << std::endl;
-				todo[todo_offset++] = node_num + 1;
-				node_num = node->child_offset;
-				//}
-				//else {
-					//std::cout << "traversing child2" << std::endl;
-				//	todo[todo_offset++] = node->child_offset;
-				//	node_num = node_num + 1;
-				//}
-			}
+			return sqrt(min_distance);
 		}
 		else {
-			if (todo_offset == 0) break;
-			node_num = todo[--todo_offset];
+			Point mid1 = (nodes[node_num + 1].bbox.min + node->bbox.max) / 2.;
+			Point mid2 = (nodes[node->child_offset].bbox.min + node->bbox.max) / 2.;
+			float dist1 = sqrDist(p, mid1);
+			float dist2 = sqrDist(p, mid2);
+
+			if (dist1 < dist2) {
+				node_num = node_num + 1;
+			}
+			else {
+				node_num = node->child_offset;
+			}
 		}
 	}
-	return hit;
+	return -1;
+}
+
+ Point BVHAccelerator::intersectSphere(const Sphere & s, Point current) const {
+	 if (total_nodes == 0) {
+		 return Point();
+	 }
+	 bool hit = false;
+	 int todo_offset = 0, node_num = 0;
+	 int todo[64];
+	 float currentMinDistance = s.radius * s.radius;
+
+	 //std::cout << "entering loop" << std::endl;
+	 while (true) {
+		 const LinearBVHNode *node = &nodes[node_num];
+		 if (node->bbox.max.x == 4. || node->bbox.max.y == 4. || node->bbox.max.z == 4.) {
+			 hit = true;
+		 }
+		 //std::cout << (int)node->num_objs << std::endl;
+		 if (node->bbox.intersect(s)) {
+			 if (node->num_objs > 0) {
+				 //std::cout << "checking children" << std::endl;
+				 hit = true;
+				 for (int i = 0; i < node->num_objs; i++) {
+					 float dist = sqrDist(objs[node->obj_offset + i]->p1, s.center);
+					 if (dist < currentMinDistance) {
+						 currentMinDistance = dist;
+						 current = objs[node->obj_offset + i]->p1;
+					 }
+					 dist = sqrDist(objs[node->obj_offset + i]->p2, s.center);
+					 if (dist < currentMinDistance) {
+						 currentMinDistance = dist;
+						 current = objs[node->obj_offset + i]->p2;
+					 }
+					 dist = sqrDist(objs[node->obj_offset + i]->p3, s.center);
+					 if (dist < currentMinDistance) {
+						 currentMinDistance = dist;
+						 current = objs[node->obj_offset + i]->p3;
+					 }
+				 }
+				 if (todo_offset == 0) break;
+				 node_num = todo[--todo_offset];
+			 }
+			 else {
+				 todo[todo_offset++] = node_num + 1;
+				 node_num = node->child_offset;
+			 }
+		 }
+		 else {
+			 if (todo_offset == 0) break;
+			 node_num = todo[--todo_offset];
+		 }
+	 }
+	 return current;
 }
 
 int BVHAccelerator::flatten_bvh(BVHBuildNode * node, int * offset)
@@ -344,18 +389,32 @@ void BVHAccelerator::printTree(LinearBVHNode* current, int depth) const
 	printTree(current + current->child_offset, depth + 1);
 }
 
+Point BVHAccelerator::findClosestPoint(const Point & p) const {
+	Point closest = Point();
+	float sphereRadius = intersectPoint(p, &closest);
+	Sphere s = Sphere();
+	s.center = p;
+	s.radius = sphereRadius;
+	closest = intersectSphere(s, closest);
+	return closest;
+}
+
 int main(int argc, char *argv[]) {
 	string filePath(argv[1]);
 	Object o = Object(filePath);
 	Triangle ** triangles = new Triangle*[o.numTriangles];
+
 	for (int i = 0; i < o.numTriangles; i++) {
 		triangles[i] = &o.triangles[i];
 	}
 
+
 	BVHAccelerator* bvh = new BVHAccelerator(triangles, o.numTriangles, 1);
-	Point closest = Point(1., 1., 1.);
-	bvh->intersectPoint(Point(0., 0., 0.), &closest);
+	Point p = Point(0., 0., 0.);
+	cout << "Starting point search" << endl;
+	Point closest = bvh->findClosestPoint(p);
 	cout << closest.x << ", " << closest.y << ", " << closest.z << endl;
+	cout << "Ending point search" << endl;
 
 	cin.get();
 	return 0;

@@ -54,7 +54,6 @@ Object::Object(std::string filePath)
 				tinyobj::real_t vy = attrib.vertices[3 * idx + 1];
 				tinyobj::real_t vz = attrib.vertices[3 * idx + 2];
 
-				p[v].idx = idx;
 				p[v].x = vx;
 				p[v].y = vy;
 				p[v].z = vz;

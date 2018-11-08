@@ -81,13 +81,13 @@ struct BoundingBox {
 		return true;
 	}
 
-	bool sphereIntersectsBox(const Sphere & s) {
-		bool in_left = s.insidePlane(left);
-		bool in_right = s.insidePlane(right);
-		bool in_front = s.insidePlane(front);
-		bool in_back = s.insidePlane(back);
-		bool in_top = s.insidePlane(up);
-		bool in_bottom = s.insidePlane(down);
+	bool sphereIntersectsBox(const Sphere & s) const {
+		bool in_left = !s.outsidePlane(left);
+		bool in_right = !s.outsidePlane(right);
+		bool in_front = !s.outsidePlane(front);
+		bool in_back = !s.outsidePlane(back);
+		bool in_top = !s.outsidePlane(up);
+		bool in_bottom = !s.outsidePlane(down);
 
 		if (s.intersectsPlane(up) &&
 			in_left && in_right && in_front && in_back) {
@@ -124,7 +124,7 @@ struct BoundingBox {
 
 	//TODO: Add intersect, not inside too
 	bool intersect(const Sphere & s) const {
-		return sphereInsideBox(s);
+		return sphereInsideBox(s) || sphereIntersectsBox(s);
 	}
 
 	BoundingBox union_boxes(const BoundingBox & b2)

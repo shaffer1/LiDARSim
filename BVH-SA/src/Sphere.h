@@ -10,7 +10,7 @@ public:
 	~Sphere();
 
 	bool insidePlane(const Plane & p) const {
-		return -p.planeDistance(center) > radius;
+		return -p.planeDistance(center) >= radius;
 	}
 
 	bool outsidePlane(const Plane & p) const {
