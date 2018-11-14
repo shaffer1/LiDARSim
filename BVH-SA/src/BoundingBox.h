@@ -65,12 +65,12 @@ struct BoundingBox {
 		return p >= min && p <= max;
 	}
  
-	bool intersect(const Point & p) const {
+	inline bool intersect(const Point & p) const {
 		return min.x <= p.x && min.y <= p.y && min.x <= p.z && max.x >= p.x && max.y >= p.y && max.z >= p.z;
 	}
 
 
-	bool sphereInsideBox(const Sphere & s) const {
+	inline bool sphereInsideBox(const Sphere & s) const {
 		if (!s.insidePlane(front)) { return false; }
 		if (!s.insidePlane (back)) { return false; }
 		if (!s.insidePlane(up)) { return false; }
@@ -81,7 +81,7 @@ struct BoundingBox {
 		return true;
 	}
 
-	bool sphereIntersectsBox(const Sphere & s) const {
+	inline bool sphereIntersectsBox(const Sphere & s) const {
 		bool in_left = !s.outsidePlane(left);
 		bool in_right = !s.outsidePlane(right);
 		bool in_front = !s.outsidePlane(front);
