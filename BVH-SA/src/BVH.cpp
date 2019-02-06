@@ -1,14 +1,12 @@
 #include "BVH.h"
 #include "Object.h"
 #include "TriangleComparer.h"
-
-
 #include "BVH.h"
 #include "MidpointComparer.h"
 #include <iostream>
 #include <vector>
-
-#include <chrono> 
+#include <chrono>
+#include <RAJA/RAJA.hpp>
 
 inline float sqrDist(const Point & p1, const Point & p2) {
 	return (p2.x - p1.x) * (p2.x - p1.x) + (p2.y - p1.y) * (p2.y - p1.y) + (p2.z - p1.z) * (p2.z - p1.z);
@@ -251,6 +249,23 @@ float randomFloat() {
 }
 
 int main(int argc, char *argv[]) {
+	//int* x = new int[100000];
+	//int* y = new int[100000];
+	//int* z = new int[100000];
+
+	//for (int i = 0; i < 100000; i++) {
+	//	x[i] = i;
+	//	y[i] = -i;
+	//}
+
+	/*RAJA::forall<RAJA::omp_parallel_for_exec>(RAJA::RangeSegment(0, 100000), [=](int i) {
+		z[i] = x[i] + y[i];
+	});
+	
+	std::cout << z[0] << std::endl;
+
+	cin.get();*/
+
 	string filePath(argv[1]);
 	Object o = Object(filePath);
 	Triangle ** triangles = new Triangle*[o.numTriangles];
@@ -263,20 +278,36 @@ int main(int argc, char *argv[]) {
 
 	auto start = chrono::high_resolution_clock::now();
 	
-	Point point = Point(0., 0., 0.);
+	Point* point = new Point(0., 0., 0.);
+	
+	
+	RAJA::forall<RAJA::omp_parallel_for_exec>(RAJA::RangeSegment(0, 10000), [=](int i) {
+		point->x = randomFloat();
+		point->y = randomFloat();
+		point->z = randomFloat();
+		Point closest = bvh->findClosestPoint(*point);
+	});
+
+	std::cout << "Finished" << std::endl;
+	auto stop = chrono::high_resolution_clock::now();
+	auto duration = chrono::duration_cast<chrono::milliseconds>(stop - start);
+
+	std::cout << duration.count() << std::endl;
+	
+
+	start = chrono::high_resolution_clock::now();
 	for (int i = 0; i < 10000; i++) {
-		point.x = randomFloat();
-		point.y = randomFloat();
-		point.z = randomFloat();
-		bvh->findClosestPoint(point);
+		point->x = randomFloat();
+		point->y = randomFloat();
+		point->z = randomFloat();
+		Point closest = bvh->findClosestPoint(*point);
 		//cout << closest.x << ", " << closest.y << ", " << closest.z << endl;
 	}
 
-	auto stop = chrono::high_resolution_clock::now();
-	auto duration = chrono::duration_cast<chrono::milliseconds>(stop - start);
+	stop = chrono::high_resolution_clock::now();
+	duration = chrono::duration_cast<chrono::milliseconds>(stop - start);
 	
 	std::cout << duration.count() << std::endl;
-
-	cin.get();
+	std::cin.get();
 	return 0;
 }
