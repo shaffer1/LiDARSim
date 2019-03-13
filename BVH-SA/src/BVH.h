@@ -16,6 +16,7 @@
 #include "BVHBuildNode.h"
 #include "BVHObjectInfo.h"
 #include "BVHNode.h"
+#include "HitInfo.h"
 
 
 //Bounding Volume Hierarchy (BVH)
@@ -28,6 +29,7 @@ public:
 	Point findClosestPoint(const Point & p) const;
 	float intersectPoint(const Point & p, Point * approximateClosestPoint) const;
 	Point intersectSphere(const Sphere& s, Point current) const;
+	bool hit(const Ray & r, double & minT, HitInfo & hitInfo);
 	void printTree(LinearBVHNode* current, int depth) const;
 	LinearBVHNode* nodes;
 	Triangle** objs;

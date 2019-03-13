@@ -1,12 +1,15 @@
 #include "BVH.h"
 #include "Object.h"
 #include "TriangleComparer.h"
-#include "BVH.h"
 #include "MidpointComparer.h"
+#include "Constants.h"
+
 #include <iostream>
 #include <vector>
 #include <chrono>
 #include <RAJA/RAJA.hpp>
+
+
 
 inline float sqrDist(const Point & p1, const Point & p2) {
 	return (p2.x - p1.x) * (p2.x - p1.x) + (p2.y - p1.y) * (p2.y - p1.y) + (p2.z - p1.z) * (p2.z - p1.z);
@@ -244,27 +247,70 @@ Point BVHAccelerator::findClosestPoint(const Point & p) const {
 	return closest;
 }
 
+bool BVHAccelerator::hit(const Ray & r, double & minT, HitInfo & hitInfo) {
+	if (total_nodes == 0) {
+		return false;
+	}
+	bool hit = false;
+	double currentT = MAX_DOUBLE;
+	double currentMinimumT = MAX_DOUBLE;
+	int todoOffset = 0; 
+	int nodeNum = 0;
+	int todo[64];
+
+	Point inverseDirection = r.direction.inverse(); 
+	int negativeDir[3] = { inverseDirection.x < 0, inverseDirection.y < 0, inverseDirection.z < 0 };
+
+	while (true) {
+		const LinearBVHNode* node = &nodes[nodeNum];
+		if (node->bbox.hit(r)) {
+			//checking children
+			if (node->num_objs > 0) {
+				for (int i = 0; i < node->num_objs; i++) {
+					if (objs[node->obj_offset + i]->hit(r, currentT, hitInfo) && currentT < currentMinimumT && currentT > 0) {
+						currentMinimumT = currentT;
+						//curr = hit_info.color;
+						hit = true;
+					}
+				}
+				if (todoOffset == 0) break;
+				nodeNum = todo[--todoOffset];
+			}
+			else {
+				if (negativeDir[node->axis]) {
+					//traverse child 1 first
+					todo[todoOffset++] = nodeNum + 1;
+					nodeNum = node->child_offset;
+				}
+				else {
+					//traverse child 2 first
+					todo[todoOffset++] = node->child_offset;
+					nodeNum = nodeNum + 1;
+				}
+			}
+		}
+		else {
+			if (todoOffset == 0) break;
+			nodeNum = todo[--todoOffset];
+		}
+	}
+
+	hitInfo.didHit = hit;
+	hitInfo.hitPoint = r.origin + r.direction * currentMinimumT;
+	minT = currentMinimumT;
+
+	return hit;
+}
+
 float randomFloat() {
 	return static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
 }
 
+Point randomPoint() {
+	return Point(randomFloat(), randomFloat(), randomFloat());
+}
+
 int main(int argc, char *argv[]) {
-	//int* x = new int[100000];
-	//int* y = new int[100000];
-	//int* z = new int[100000];
-
-	//for (int i = 0; i < 100000; i++) {
-	//	x[i] = i;
-	//	y[i] = -i;
-	//}
-
-	/*RAJA::forall<RAJA::omp_parallel_for_exec>(RAJA::RangeSegment(0, 100000), [=](int i) {
-		z[i] = x[i] + y[i];
-	});
-	
-	std::cout << z[0] << std::endl;
-
-	cin.get();*/
 
 	string filePath(argv[1]);
 	Object o = Object(filePath);
@@ -273,14 +319,34 @@ int main(int argc, char *argv[]) {
 	for (int i = 0; i < o.numTriangles; i++) {
 		triangles[i] = &o.triangles[i];
 	}
-
+	std::cout << "Starting BVH build" << std::endl;
 	BVHAccelerator* bvh = new BVHAccelerator(triangles, o.numTriangles, 20);
+	std::cout << "Ending BVH build" << std::endl;
 
+	Point orig; 
+	Point d;
+	Ray r = Ray();
+	HitInfo h = HitInfo();
+	double minT = MAX_DOUBLE;
+	bool succ;
 	auto start = chrono::high_resolution_clock::now();
-	
+	for (int i = 0; i < 100000; i++) {
+		orig = randomPoint();
+		d = randomPoint().normalize();
+		r.origin = orig;
+		r.direction = d;
+		succ = bvh->hit(r, minT, h);
+	}
+	auto stop = chrono::high_resolution_clock::now();
+	auto duration = chrono::duration_cast<chrono::milliseconds>(stop - start);
+
+	if (succ) std::cout << h.hitPoint.x << h.hitPoint.y << h.hitPoint.z << std::endl;
+	else std::cout << duration.count() << std::endl;
+	std::cin.get();
+
+
+	/*auto start = chrono::high_resolution_clock::now();
 	Point* point = new Point(0., 0., 0.);
-	
-	
 	RAJA::forall<RAJA::omp_parallel_for_exec>(RAJA::RangeSegment(0, 10000), [=](int i) {
 		point->x = randomFloat();
 		point->y = randomFloat();
@@ -288,12 +354,10 @@ int main(int argc, char *argv[]) {
 		Point closest = bvh->findClosestPoint(*point);
 	});
 
-	std::cout << "Finished" << std::endl;
+
 	auto stop = chrono::high_resolution_clock::now();
 	auto duration = chrono::duration_cast<chrono::milliseconds>(stop - start);
-
-	std::cout << duration.count() << std::endl;
-	
+	std::cout << "RAJA Time: " << duration.count() << std::endl;
 
 	start = chrono::high_resolution_clock::now();
 	for (int i = 0; i < 10000; i++) {
@@ -301,13 +365,11 @@ int main(int argc, char *argv[]) {
 		point->y = randomFloat();
 		point->z = randomFloat();
 		Point closest = bvh->findClosestPoint(*point);
-		//cout << closest.x << ", " << closest.y << ", " << closest.z << endl;
 	}
-
 	stop = chrono::high_resolution_clock::now();
 	duration = chrono::duration_cast<chrono::milliseconds>(stop - start);
 	
-	std::cout << duration.count() << std::endl;
-	std::cin.get();
+	std::cout << "Normal Time: " << duration.count() << std::endl;
+	std::cin.get();*/
 	return 0;
 }

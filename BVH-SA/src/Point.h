@@ -1,4 +1,5 @@
 #pragma once
+#include <cmath>
 //3D Point Representation
 struct Point {				//idx of point in given obj file (index begins at 1)
 	float x, y, z;
@@ -77,6 +78,27 @@ struct Point {				//idx of point in given obj file (index begins at 1)
 		float newz = f * z;
 
 		return Point(newx, newy, newz);
+	}
+
+	inline Point operator*(double f) const {
+		double newx = f * x;
+		double newy = f * y;
+		double newz = f * z;
+
+		return Point(newx, newy, newz);
+	}
+
+	inline Point inverse() const {
+		float newx = 1 / x;
+		float newy = 1 / y;
+		float newz = 1 / z;
+
+		return Point(newx, newy, newz);
+	}
+
+	inline Point normalize() const {
+		float len = sqrtf(x * x + y * y + z * z);
+		return Point(x / len, y / len, z / len);
 	}
 
 	inline static Point min(const Point & a, const Point & b) {
