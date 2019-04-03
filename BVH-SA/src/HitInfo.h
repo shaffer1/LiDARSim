@@ -1,9 +1,9 @@
 #pragma once
-#include "Point.h"
+#include "ColoredPoint.h";
 class HitInfo
 {
 public:
-	Point hitPoint;
+	ColoredPoint hitPoint;
 	bool didHit;
 
 	HitInfo();

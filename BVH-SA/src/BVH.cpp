@@ -11,6 +11,13 @@
 
 
 
+
+std::ostream& operator<<(std::ostream& os, const ColoredPoint& pt)
+{
+	os << "(x: " << pt.x << ", y: " << pt.y << ", z: " << pt.z << ") (r: " << pt.r << ", g: " << pt.g << ", b: " << pt.b << ")";
+	return os;
+}
+
 inline float sqrDist(const Point & p1, const Point & p2) {
 	return (p2.x - p1.x) * (p2.x - p1.x) + (p2.y - p1.y) * (p2.y - p1.y) + (p2.z - p1.z) * (p2.z - p1.z);
 }
@@ -254,6 +261,9 @@ bool BVHAccelerator::hit(const Ray & r, double & minT, HitInfo & hitInfo) {
 	bool hit = false;
 	double currentT = MAX_DOUBLE;
 	double currentMinimumT = MAX_DOUBLE;
+	Triangle* currTriangle;
+	float color[3];
+
 	int todoOffset = 0; 
 	int nodeNum = 0;
 	int todo[64];
@@ -267,9 +277,13 @@ bool BVHAccelerator::hit(const Ray & r, double & minT, HitInfo & hitInfo) {
 			//checking children
 			if (node->num_objs > 0) {
 				for (int i = 0; i < node->num_objs; i++) {
-					if (objs[node->obj_offset + i]->hit(r, currentT, hitInfo) && currentT < currentMinimumT && currentT > 0) {
+					Triangle* tri = objs[node->obj_offset + i];
+					if (tri->hit(r, currentT, hitInfo) && currentT < currentMinimumT && currentT > 0) {
 						currentMinimumT = currentT;
-						//curr = hit_info.color;
+						currTriangle = tri;
+						color[0] = tri->p1.r;
+						color[1] = tri->p1.g;
+						color[2] = tri->p1.b;
 						hit = true;
 					}
 				}
@@ -296,7 +310,8 @@ bool BVHAccelerator::hit(const Ray & r, double & minT, HitInfo & hitInfo) {
 	}
 
 	hitInfo.didHit = hit;
-	hitInfo.hitPoint = r.origin + r.direction * currentMinimumT;
+	Point p = (r.origin + r.direction * currentMinimumT);
+	hitInfo.hitPoint = ColoredPoint(p.x, p.y, p.z, color[0], color[1], color[2]);
 	minT = currentMinimumT;
 
 	return hit;
@@ -328,20 +343,23 @@ int main(int argc, char *argv[]) {
 	Ray r = Ray();
 	HitInfo h = HitInfo();
 	double minT = MAX_DOUBLE;
-	bool succ;
+	bool success;
 	auto start = chrono::high_resolution_clock::now();
-	for (int i = 0; i < 100000; i++) {
-		orig = randomPoint();
-		d = randomPoint().normalize();
-		r.origin = orig;
-		r.direction = d;
-		succ = bvh->hit(r, minT, h);
-	}
+
+
+	//for (int i = 0; i < 100000; i++) {
+	//	orig = randomPoint();
+	//	d = randomPoint().normalize();
+		r.origin = Point(0, 3, -10);
+		r.direction = Point(0, 0, 1);
+		success = bvh->hit(r, minT, h);
+		//std::cout << h.hitPoint << endl;
+	//}
 	auto stop = chrono::high_resolution_clock::now();
 	auto duration = chrono::duration_cast<chrono::milliseconds>(stop - start);
 
-	if (succ) std::cout << h.hitPoint.x << h.hitPoint.y << h.hitPoint.z << std::endl;
-	else std::cout << duration.count() << std::endl;
+	if (success) std::cout << h.hitPoint << std::endl;
+	std::cout << duration.count() << std::endl;
 	std::cin.get();
 
 

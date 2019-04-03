@@ -129,6 +129,7 @@
     <ClCompile Include="BVHBuildNode.cpp" />
     <ClCompile Include="BVHNode.cpp" />
     <ClCompile Include="BVHObjectInfo.cpp" />
+    <ClCompile Include="ColoredPoint.cpp" />
     <ClCompile Include="HitInfo.cpp" />
     <ClCompile Include="LinearBVHNode.cpp" />
     <ClCompile Include="MidpointComparer.cpp" />
@@ -139,6 +140,7 @@
     <ClCompile Include="Ray.cpp" />
     <ClCompile Include="Sphere.cpp" />
     <ClCompile Include="TriangleComparer.cpp" />
+    <ClCompile Include="Vector3.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BoundingBox.h" />
@@ -147,6 +149,7 @@
     <ClInclude Include="BVHNode.h" />
     <ClInclude Include="BVHObjectInfo.h" />
     <ClInclude Include="BVH_Utils.h" />
+    <ClInclude Include="ColoredPoint.h" />
     <ClInclude Include="Constants.h" />
     <ClInclude Include="HitInfo.h" />
     <ClInclude Include="LinearBVHNode.h" />
@@ -159,6 +162,7 @@
     <ClInclude Include="Sphere.h" />
     <ClInclude Include="Triangle.h" />
     <ClInclude Include="TriangleComparer.h" />
+    <ClInclude Include="Vector3.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

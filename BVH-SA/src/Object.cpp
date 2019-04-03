@@ -5,11 +5,14 @@
 Object::Object(std::string filePath)
 {
 	tinyobj::attrib_t attrib;
-	std::vector<tinyobj::shape_t> shapes;
-	std::vector<tinyobj::material_t> materials;
+	std::vector<tinyobj::shape_t> shapes = std::vector<tinyobj::shape_t>();
+	std::vector<tinyobj::material_t> materials = std::vector<tinyobj::material_t>();
 
 	std::string err;
-	bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err, filePath.c_str());
+	bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err, filePath.c_str(), "Data");
+	for (auto m : materials) {
+		std::cout << m.diffuse[0] << std::endl;
+	}
 	if (!ret) {
 		perror("Object Parsing Failed");
 		exit(-1);
@@ -38,10 +41,11 @@ Object::Object(std::string filePath)
 		size_t index_offset = 0;
 
 		//allocate some memory to temporarily store point values for each triangle
-		Point p[3];
-
+		ColoredPoint p[3];
+		tinyobj::material_t m;
 		for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) {
 			int fv = shapes[s].mesh.num_face_vertices[f];
+			m = materials[shapes[s].mesh.material_ids[f]];
 			if (fv != 3) {
 				perror("non-triangle face found. exiting.");
 				exit(-1);
@@ -54,9 +58,18 @@ Object::Object(std::string filePath)
 				tinyobj::real_t vy = attrib.vertices[3 * idx + 1];
 				tinyobj::real_t vz = attrib.vertices[3 * idx + 2];
 
+				tinyobj::real_t cx = attrib.colors[3 * idx + 0];
+				tinyobj::real_t cy = attrib.colors[3 * idx + 1];
+				tinyobj::real_t cz = attrib.colors[3 * idx + 2];
+
 				p[v].x = vx;
 				p[v].y = vy;
 				p[v].z = vz;
+
+				p[v].r = m.diffuse[0];
+				p[v].g = m.diffuse[1];
+				p[v].b = m.diffuse[2];
+
 
 				if (minx > vx) {
 					minx = vx;
@@ -83,7 +96,6 @@ Object::Object(std::string filePath)
 			triangles_array_index++;
 		}
 	}
-	Point center = Point((maxx + minx) / 2.0f, (maxy + miny) / 2.0f, (maxz + minz) / 2.0f);
 	float rx = (maxx - minx) / 2.0f;
 	float ry = (maxy - miny) / 2.0f;
 	float rz = (maxz - minz) / 2.0f;

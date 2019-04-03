@@ -5,7 +5,6 @@ struct Point {				//idx of point in given obj file (index begins at 1)
 	float x, y, z;
 
 	Point() {};
-	Point(float x_arg, float y_arg, float z_arg, int idx_arg) : x(x_arg), y(y_arg), z(z_arg) {}
 	Point(float x_arg, float y_arg, float z_arg) : x(x_arg), y(y_arg), z(z_arg) {}
 	inline float getDim(int dim) const {
 		if (dim == 0) {

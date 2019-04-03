@@ -57,6 +57,12 @@
     <ClCompile Include="HitInfo.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Vector3.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ColoredPoint.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BVH.h">
@@ -111,6 +117,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Constants.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Vector3.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ColoredPoint.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
