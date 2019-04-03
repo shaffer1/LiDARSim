@@ -9,7 +9,7 @@
 #include <chrono>
 #include <RAJA/RAJA.hpp>
 
-
+#define DEG2RAD 0.01745329251
 
 
 std::ostream& operator<<(std::ostream& os, const ColoredPoint& pt)
@@ -325,6 +325,42 @@ Point randomPoint() {
 	return Point(randomFloat(), randomFloat(), randomFloat());
 }
 
+Point sphericalToCartesian(float r, float polar, float azimuth) {
+	Point p = Point();
+	polar = DEG2RAD * polar;
+	azimuth = DEG2RAD * azimuth;
+	p.x = r * sinf(polar) * cosf(azimuth);
+	p.z = r * sinf(polar) * sinf(azimuth);
+	p.y = r * cosf(polar) - 1;
+	return p;
+}
+
+void launchRays(int numRaysH, int numRaysV, const Point & origin, BVHAccelerator* bvh) {
+	float angleDeltaH = 360. / numRaysH;
+	float angleDeltaV = 120. / numRaysV;
+
+	Point end;
+	Ray r;
+	r.origin = origin;
+	HitInfo h = HitInfo();
+	double minT = MAX_DOUBLE;
+
+	bool success;
+	for (int i = 0; i < numRaysV; i++) {
+		for (int j = 0; j < numRaysH; j++) {
+			end = origin + sphericalToCartesian(1., -60 + i * angleDeltaV, j*angleDeltaH);
+			r.direction = end - origin;
+			success = bvh->hit(r, minT, h);
+			if (success) {
+				std::cout << h.hitPoint << std::endl;
+			}
+			else {
+				std::cout << "No hit" << std::endl;
+			}
+		}
+	}
+}
+
 int main(int argc, char *argv[]) {
 
 	string filePath(argv[1]);
@@ -338,27 +374,24 @@ int main(int argc, char *argv[]) {
 	BVHAccelerator* bvh = new BVHAccelerator(triangles, o.numTriangles, 20);
 	std::cout << "Ending BVH build" << std::endl;
 
-	Point orig; 
-	Point d;
-	Ray r = Ray();
-	HitInfo h = HitInfo();
-	double minT = MAX_DOUBLE;
-	bool success;
+	//Point orig; 
+	//Point d;
+	//Ray r = Ray();
+	//HitInfo h = HitInfo();
+	//double minT = MAX_DOUBLE;
+	//bool success;
 	auto start = chrono::high_resolution_clock::now();
 
+	launchRays(20, 10, Point(0, 3, 3.5), bvh);
 
-	//for (int i = 0; i < 100000; i++) {
-	//	orig = randomPoint();
-	//	d = randomPoint().normalize();
-		r.origin = Point(0, 3, -10);
-		r.direction = Point(0, 0, 1);
-		success = bvh->hit(r, minT, h);
-		//std::cout << h.hitPoint << endl;
-	//}
+	//r.origin = Point(0, 3, -10);
+	//r.direction = Point(0, 0, 1);
+	
+
 	auto stop = chrono::high_resolution_clock::now();
 	auto duration = chrono::duration_cast<chrono::milliseconds>(stop - start);
 
-	if (success) std::cout << h.hitPoint << std::endl;
+	//if (success) std::cout << h.hitPoint << std::endl;
 	std::cout << duration.count() << std::endl;
 	std::cin.get();
 
