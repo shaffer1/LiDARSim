@@ -3,7 +3,9 @@
 #include "TriangleComparer.h"
 #include "MidpointComparer.h"
 #include "Constants.h"
+#include "bitmap_image.hpp"
 
+#include <algorithm>
 #include <iostream>
 #include <vector>
 #include <chrono>
@@ -329,15 +331,15 @@ Point sphericalToCartesian(float r, float polar, float azimuth) {
 	Point p = Point();
 	polar = DEG2RAD * polar;
 	azimuth = DEG2RAD * azimuth;
-	p.x = r * sinf(polar) * cosf(azimuth);
-	p.z = r * sinf(polar) * sinf(azimuth);
-	p.y = r * cosf(polar) - 1;
+	p.x = r * cosf(polar) * cosf(azimuth);
+	p.z = r * cosf(polar) * sinf(azimuth);
+	p.y = r * sinf(polar);
 	return p;
 }
 
-void launchRays(int numRaysH, int numRaysV, const Point & origin, BVHAccelerator* bvh) {
+void launchRays(int numRaysH, int numRaysV, const Point & origin, BVHAccelerator* bvh, bool labeled) {
 	float angleDeltaH = 360. / numRaysH;
-	float angleDeltaV = 120. / numRaysV;
+	float angleDeltaV = 180. / numRaysV;
 
 	Point end;
 	Ray r;
@@ -345,20 +347,80 @@ void launchRays(int numRaysH, int numRaysV, const Point & origin, BVHAccelerator
 	HitInfo h = HitInfo();
 	double minT = MAX_DOUBLE;
 
+	std::vector<vector <Point>> dists = std::vector<vector <Point>>(numRaysV);
+	for (int i = 0; i < numRaysV; i++) {
+		dists[i] = vector<Point>(numRaysH);
+	}
+
 	bool success;
 	for (int i = 0; i < numRaysV; i++) {
 		for (int j = 0; j < numRaysH; j++) {
-			end = origin + sphericalToCartesian(1., -60 + i * angleDeltaV, j*angleDeltaH);
+			end = origin + sphericalToCartesian(1., -90 + i * angleDeltaV, j*angleDeltaH);
 			r.direction = end - origin;
 			success = bvh->hit(r, minT, h);
 			if (success) {
-				std::cout << h.hitPoint << std::endl;
+				if (!labeled) {
+					dists[i][j] = Point(minT, minT, minT);
+				}
+				else {
+					dists[i][j] = Point(h.hitPoint.r, h.hitPoint.g, h.hitPoint.b);
+				}
+				//std::cout << h.hitPoint << std::endl;
 			}
 			else {
-				std::cout << "No hit" << std::endl;
+				dists[i][j] = Point(0, 0, 0);
+				//std::cout << "No hit" << std::endl;
 			}
 		}
 	}
+
+	float max = -1;
+
+	class Comp {
+	public:
+		bool operator()(const Point & p1, const Point & p2) {
+			return p1.x < p2.x;
+		}
+	};
+	Comp comp;
+	if (!labeled) {
+		for (auto vec : dists) {
+			float smallmax = (*(std::max_element(vec.begin(), vec.end(), comp))).x;
+			max = std::max(max, smallmax);
+		}
+
+		Point p = Point(1, 1, 1);
+		for (auto & vec : dists) {
+			for (auto & elem : vec) {
+				if (elem.x) {
+					elem = p - (elem / max);
+				}
+			}
+		}
+	}
+
+	bitmap_image bmp = bitmap_image(numRaysH, numRaysV);
+
+	for (int i = 0; i < dists.size(); i++) {
+		for (int j = 0; j < dists[i].size(); j++) {
+			Point color = dists[i][j];
+			unsigned char char_r;
+			unsigned char char_g;
+			unsigned char char_b;
+
+			char_r = (unsigned char)(color.x * 255.);
+			char_g = (unsigned char)(color.y * 255.);
+			char_b = (unsigned char)(color.z * 255.);
+
+
+			int y = numRaysV - i - 1; //changing because of how bmps are written to
+
+			bmp.set_pixel(j, y, char_r, char_g, char_b);
+		}
+	}
+	bmp.set_pixel(0, numRaysV - 0 - 1, 100, 100, 100);
+	bmp.save_image("test.bmp");
+
 }
 
 int main(int argc, char *argv[]) {
@@ -382,7 +444,7 @@ int main(int argc, char *argv[]) {
 	//bool success;
 	auto start = chrono::high_resolution_clock::now();
 
-	launchRays(20, 10, Point(0, 3, 3.5), bvh);
+	launchRays(800, 400, Point(0, 3, 3.5), bvh, false);
 
 	//r.origin = Point(0, 3, -10);
 	//r.direction = Point(0, 0, 1);

@@ -143,6 +143,7 @@
     <ClCompile Include="Vector3.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="bitmap_image.hpp" />
     <ClInclude Include="BoundingBox.h" />
     <ClInclude Include="BVH.h" />
     <ClInclude Include="BVHBuildNode.h" />
