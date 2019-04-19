@@ -337,7 +337,7 @@ Point sphericalToCartesian(float r, float polar, float azimuth) {
 	return p;
 }
 
-void launchRays(int numRaysH, int numRaysV, const Point & origin, BVHAccelerator* bvh, bool labeled) {
+void launchRays(int numRaysH, int numRaysV, const Point & origin, BVHAccelerator* bvh, bool labeled, const std::string & name) {
 	float angleDeltaH = 360. / numRaysH;
 	float angleDeltaV = 180. / numRaysV;
 
@@ -419,13 +419,24 @@ void launchRays(int numRaysH, int numRaysV, const Point & origin, BVHAccelerator
 		}
 	}
 	bmp.set_pixel(0, numRaysV - 0 - 1, 100, 100, 100);
-	bmp.save_image("test.bmp");
+	bmp.save_image(name);
 
 }
 
 int main(int argc, char *argv[]) {
 
+	if (argc != 4) {
+		std::cout << "Missing required arguments. Arguments needed are:\n1. Path to Obj\n2. \"t\" or \"f\" depending on if you want the test or the labeled data\n3. Output file name" << std::endl;
+		return 1;
+	}
+
 	string filePath(argv[1]);
+	std::string labeledArg;
+	labeledArg = std::string(argv[2]);
+
+
+	bool shouldLabel = labeledArg == "t";
+	
 	Object o = Object(filePath);
 	Triangle ** triangles = new Triangle*[o.numTriangles];
 
@@ -444,7 +455,9 @@ int main(int argc, char *argv[]) {
 	//bool success;
 	auto start = chrono::high_resolution_clock::now();
 
-	launchRays(800, 400, Point(0, 3, 3.5), bvh, false);
+	//Point(55, 13.5, -59)
+
+	launchRays(800, 400, Point(0, 2.5, 5), bvh, shouldLabel, std::string(argv[3]));
 
 	//r.origin = Point(0, 3, -10);
 	//r.direction = Point(0, 0, 1);
