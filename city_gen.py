@@ -18,7 +18,7 @@ MAX_Z = 50
 Z_SIZE_RATIO_MIN = 0.75
 bpy.data.objects['Cube'].select = True
 bpy.ops.object.delete()
-bpy.ops.import_scene.obj(filepath="C:\\Users\\vidushi\\Documents\\LIDAR\\custom.obj")
+bpy.ops.import_scene.obj(filepath=".\\custom.obj")
 bpy.data.objects[MESH_NAME].hide = True
 np.random.seed(seed=int(time.time()))
 for i in range(N):
@@ -27,7 +27,6 @@ for i in range(N):
 	AVG_VAR_XY_2 = np.random.randint(20, 30)
 	AVG_VAR_Z_1 = np.random.randint(8, 16)
 	AVG_VAR_Z_2 = np.random.randint(20, 28)
-	print(AVG_VAR_XY_1, AVG_VAR_XY_2, TOTAL_BUILDINGS, AVG_VAR_Z_1, AVG_VAR_Z_2)
 	bpy.ops.node.new_node_tree(type='NodeTree_SceneCity', name=CITY_NAME)
 	city = bpy.data.node_groups[CITY_NAME]
 	node1 = city.nodes.new(type="BlenderMesh2MeshDataNode")
@@ -54,6 +53,6 @@ for i in range(N):
 		city_materials[0] = bpy.data.materials[WALL]
 		city_materials[1] = bpy.data.materials[WINDOW]
 		city_materials[2] = bpy.data.materials[DOOR]
-	bpy.ops.export_scene.obj(filepath="C:\\Users\\vidushi\\Documents\\LIDAR\\scenes\\" + str(i) + ".obj")
+	bpy.ops.export_scene.obj(filepath=".\\scenes\\" + str(i) + ".obj")
 	bpy.data.objects['City'].select = True
 	bpy.ops.object.delete()
