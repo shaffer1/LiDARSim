@@ -7,6 +7,6 @@ The color of the pixels in the labeled image is the classification of that inter
 
 **usage:** LiDARSim.exe path_to_scene_obj output_file_name
 
-**How to build:** The only dependencies to this project is the WaveFront object parsing library, tiny_obj_loader.h, and a bitmap image writing library, bitmap_image.hpp. The source for these libraries is included in the _src_ directory and they do not require and dlls. Because of this, the project should build without need for any other downloads except for the source code.
+**How to build:** The only dependencies to this project is the WaveFront object parsing library, tiny_obj_loader.h, and a bitmap image writing library, bitmap_image.hpp. The source for these libraries is included in the _src_ directory and they do not require any dlls. Because of this, the project should build without need for any other downloads except for the source code.
 
 **Other note:** the .mtl file associated with the input WaveFront object must be in the same directory as the executable.
