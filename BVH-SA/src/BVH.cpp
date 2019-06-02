@@ -365,7 +365,6 @@ void launchRays(int numRaysH, int numRaysV, const Point & origin, BVHAccelerator
 				else {
 					dists[i][j] = Point(h.hitPoint.r, h.hitPoint.g, h.hitPoint.b);
 				}
-				//std::cout << h.hitPoint << std::endl;
 			}
 			else {
 				dists[i][j] = Point(0, 0, 0);
@@ -392,7 +391,7 @@ void launchRays(int numRaysH, int numRaysV, const Point & origin, BVHAccelerator
 		Point p = Point(1, 1, 1);
 		for (auto & vec : dists) {
 			for (auto & elem : vec) {
-				if (elem.x) {
+				if (elem.x != 0) {
 					elem = p - (elem / max);
 				}
 			}
@@ -425,17 +424,12 @@ void launchRays(int numRaysH, int numRaysV, const Point & origin, BVHAccelerator
 
 int main(int argc, char *argv[]) {
 
-	if (argc != 4) {
-		std::cout << "Missing required arguments. Arguments needed are:\n1. Path to Obj\n2. \"t\" or \"f\" depending on if you want the test or the labeled data\n3. Output file name" << std::endl;
+	if (argc != 3) {
+		std::cout << "Missing required arguments. Arguments needed are:\n1. Path to Obj\n2. Output file name" << std::endl;
 		return 1;
 	}
 
 	string filePath(argv[1]);
-	std::string labeledArg;
-	labeledArg = std::string(argv[2]);
-
-
-	bool shouldLabel = labeledArg == "t";
 	
 	Object o = Object(filePath);
 	Triangle ** triangles = new Triangle*[o.numTriangles];
@@ -457,7 +451,8 @@ int main(int argc, char *argv[]) {
 
 	//Point(55, 13.5, -59)
 
-	launchRays(800, 400, Point(0, 2.5, 5), bvh, shouldLabel, std::string(argv[3]));
+	launchRays(800, 400, Point(0, 2.5, 5), bvh, true, "labeled\\" + std::string(argv[2]));
+	launchRays(800, 400, Point(0, 2.5, 5), bvh, false, "unlabeled\\" + std::string(argv[2]));
 
 	//r.origin = Point(0, 3, -10);
 	//r.direction = Point(0, 0, 1);
