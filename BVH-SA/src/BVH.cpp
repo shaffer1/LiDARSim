@@ -9,22 +9,15 @@
 #include <iostream>
 #include <vector>
 #include <chrono>
-#include <RAJA/RAJA.hpp>
 
 #define DEG2RAD 0.01745329251
 
-
-std::ostream& operator<<(std::ostream& os, const ColoredPoint& pt)
-{
-	os << "(x: " << pt.x << ", y: " << pt.y << ", z: " << pt.z << ") (r: " << pt.r << ", g: " << pt.g << ", b: " << pt.b << ")";
-	return os;
-}
-
+// Compute distance between two points in 3D space
 inline float sqrDist(const Point & p1, const Point & p2) {
 	return (p2.x - p1.x) * (p2.x - p1.x) + (p2.y - p1.y) * (p2.y - p1.y) + (p2.z - p1.z) * (p2.z - p1.z);
 }
 
-
+// Recursive helper function for building the BVH
 BVHBuildNode * BVHAccelerator::recursive_build(BVHObjectInfo* build_data, int build_data_size, int start, int end, int * total_nodes, Triangle** ordered_objs, int & orderedObjsSize)
 {
 	(*total_nodes)++;
@@ -70,6 +63,7 @@ BVHBuildNode * BVHAccelerator::recursive_build(BVHObjectInfo* build_data, int bu
 	return node;
 }
 
+// Uses the BVH to find the approximate nearest point to p
 float BVHAccelerator::intersectPoint(const Point & p, Point * approximateClosestPoint) const
 {
 	if (total_nodes == 0) {
@@ -124,6 +118,8 @@ float BVHAccelerator::intersectPoint(const Point & p, Point * approximateClosest
 	return -1;
 }
 
+// Traverses a the BVH doing sphere/bounding box intersections
+// Used to find the closest point in the scene to another point
  Point BVHAccelerator::intersectSphere(const Sphere & s, Point current) const {
 	 if (total_nodes == 0) {
 		 return Point();
@@ -198,7 +194,9 @@ int BVHAccelerator::flatten_bvh(BVHBuildNode * node, int * offset)
 	return local_offset;
 }
 
-
+// Builds the BVH given an array of pointers of the triangles of a scene.
+// objSize is the length of the objs array
+// max_objs_per_leaf the maximum amount of triangles in each leaf node of the BVH
 BVHAccelerator::BVHAccelerator(Triangle** objs, int objsSize, int max_objs_per_leaf) : max_objs_per_leaf(max_objs_per_leaf)
 {
 	BVHObjectInfo* build_data = (BVHObjectInfo*)malloc(objsSize * sizeof(BVHObjectInfo));
@@ -222,14 +220,7 @@ BVHAccelerator::BVHAccelerator(Triangle** objs, int objsSize, int max_objs_per_l
 
 }
 
-BVHAccelerator::BVHAccelerator()
-{
-}
-
-BVHAccelerator::~BVHAccelerator()
-{
-}
-
+// Useful method for debugging and BVH visualization
 void BVHAccelerator::printTree(LinearBVHNode* current, int depth) const
 {
 	BoundingBox bbox = current->bbox;
@@ -246,6 +237,7 @@ void BVHAccelerator::printTree(LinearBVHNode* current, int depth) const
 	printTree(current + current->child_offset, depth + 1);
 }
 
+// BVH traversal to find the nearest point in the scene to the given point
 Point BVHAccelerator::findClosestPoint(const Point & p) const {
 	Point closest = Point();
 	float sphereRadius = intersectPoint(p, &closest);
@@ -256,6 +248,7 @@ Point BVHAccelerator::findClosestPoint(const Point & p) const {
 	return closest;
 }
 
+// classic BVH traversal to quickly find the nearest triangle that has been hit
 bool BVHAccelerator::hit(const Ray & r, double & minT, HitInfo & hitInfo) {
 	if (total_nodes == 0) {
 		return false;
@@ -319,6 +312,9 @@ bool BVHAccelerator::hit(const Ray & r, double & minT, HitInfo & hitInfo) {
 	return hit;
 }
 
+//
+// This is the end of the class function definitions and the beginning of helper functions for the main method
+//
 float randomFloat() {
 	return static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
 }
@@ -337,13 +333,16 @@ Point sphericalToCartesian(float r, float polar, float azimuth) {
 	return p;
 }
 
-void launchRays(int numRaysH, int numRaysV, const Point & origin, BVHAccelerator* bvh, bool labeled, const std::string & name) {
+
+// Creates a simulated LiDAR image from a spherical point lens
+// the image will be numRaysH by numRaysV pixels
+void generateImage(int numRaysH, int numRaysV, const Point & cameraOrigin, BVHAccelerator* bvh, bool labeled, const std::string & name) {
 	float angleDeltaH = 360. / numRaysH;
 	float angleDeltaV = 180. / numRaysV;
 
 	Point end;
 	Ray r;
-	r.origin = origin;
+	r.origin = cameraOrigin;
 	HitInfo h = HitInfo();
 	double minT = MAX_DOUBLE;
 
@@ -352,11 +351,13 @@ void launchRays(int numRaysH, int numRaysV, const Point & origin, BVHAccelerator
 		dists[i] = vector<Point>(numRaysH);
 	}
 
+
+	//queries each ray to the BVH to determine hit distance and color
 	bool success;
 	for (int i = 0; i < numRaysV; i++) {
 		for (int j = 0; j < numRaysH; j++) {
-			end = origin + sphericalToCartesian(1., -90 + i * angleDeltaV, j*angleDeltaH);
-			r.direction = end - origin;
+			end = cameraOrigin + sphericalToCartesian(1., -90 + i * angleDeltaV, j*angleDeltaH);
+			r.direction = end - cameraOrigin;
 			success = bvh->hit(r, minT, h);
 			if (success) {
 				if (!labeled) {
@@ -375,13 +376,14 @@ void launchRays(int numRaysH, int numRaysV, const Point & origin, BVHAccelerator
 
 	float max = -1;
 
-	class Comp {
+	//functor that compares the x values of two points for use with std::max_element functions
+	class XComp {
 	public:
 		bool operator()(const Point & p1, const Point & p2) {
 			return p1.x < p2.x;
 		}
 	};
-	Comp comp;
+	XComp comp;
 	if (!labeled) {
 		for (auto vec : dists) {
 			float smallmax = (*(std::max_element(vec.begin(), vec.end(), comp))).x;
@@ -425,7 +427,8 @@ void launchRays(int numRaysH, int numRaysV, const Point & origin, BVHAccelerator
 int main(int argc, char *argv[]) {
 
 	if (argc != 3) {
-		std::cout << "Missing required arguments. Arguments needed are:\n1. Path to Obj\n2. Output file name" << std::endl;
+		//std::cout << "Usage: Arguments needed are:\n1. Path to Obj\n2. Output file name" << std::endl;
+		std::cout << "usage: LiDARSim.exe path_to_scene_obj output_file_name" << std::endl;
 		return 1;
 	}
 
@@ -441,30 +444,19 @@ int main(int argc, char *argv[]) {
 	BVHAccelerator* bvh = new BVHAccelerator(triangles, o.numTriangles, 20);
 	std::cout << "Ending BVH build" << std::endl;
 
-	//Point orig; 
-	//Point d;
-	//Ray r = Ray();
-	//HitInfo h = HitInfo();
-	//double minT = MAX_DOUBLE;
-	//bool success;
 	auto start = chrono::high_resolution_clock::now();
 
-	//Point(55, 13.5, -59)
-
-	launchRays(800, 400, Point(0, 2.5, 5), bvh, true, "labeled\\" + std::string(argv[2]));
-	launchRays(800, 400, Point(0, 2.5, 5), bvh, false, "unlabeled\\" + std::string(argv[2]));
-
-	//r.origin = Point(0, 3, -10);
-	//r.direction = Point(0, 0, 1);
-	
+	//camera origin hardcoded for now until Vishudi gives the city scene .obj's
+	generateImage(800, 400, Point(0, 2.5, 5), bvh, true, "labeled\\" + std::string(argv[2]));
+	generateImage(800, 400, Point(0, 2.5, 5), bvh, false, "unlabeled\\" + std::string(argv[2]));
 
 	auto stop = chrono::high_resolution_clock::now();
 	auto duration = chrono::duration_cast<chrono::milliseconds>(stop - start);
 
-	//if (success) std::cout << h.hitPoint << std::endl;
 	std::cout << duration.count() << std::endl;
 	std::cin.get();
 
+	//Below is RAJA parallelization code that was tested
 
 	/*auto start = chrono::high_resolution_clock::now();
 	Point* point = new Point(0., 0., 0.);
